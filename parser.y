@@ -8,7 +8,6 @@ int yyerror(const char* s);
 
 %}
 
-%locations
 %pure-parser
 
 %union {

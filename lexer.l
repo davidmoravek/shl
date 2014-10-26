@@ -12,7 +12,7 @@ static int read_input(char *buf, size_t max_size);
 
 %}
 
-%option bison-bridge bison-locations
+%option bison-bridge
 
 %%
 
