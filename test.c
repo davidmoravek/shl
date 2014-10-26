@@ -1,3 +1,0 @@
-enum {
-	T_PIPE
-}

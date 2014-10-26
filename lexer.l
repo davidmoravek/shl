@@ -3,40 +3,39 @@
 #include <string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "shl.h"
 #include "parser.tab.h"
 
-int read_input(char *buf, size_t max_size);
+static int read_input(char *buf, size_t max_size);
 
 #define YY_INPUT(buf, result, max_size) result = read_input(buf, max_size);
 
 %}
 
-%x SINGLE_QUOTED
-%x DOUBLE_QUOTED
+%option bison-bridge bison-locations
 
 %%
 
-\|                     { return PIPE; }
+\| { return T_PIPE; }
+>> { return T_APPEND; }
+& { return T_BACKGROUND; }
 
-\n                     { return EOL; }
+&& { return T_AND; }
+\|\| { return T_OR; }
+; { return T_SEMI; }
 
-[']                    { BEGIN(SINGLE_QUOTED); }
-<SINGLE_QUOTED>[^']    { }
-<SINGLE_QUOTED>[']     { BEGIN(INITIAL); return WORD; }
-<SINGLE_QUOTED><<EOF>> { return -1; }
+[a-zA-Z0-9_.-/]+ { yylval->str = strdup(yytext); return T_STR; }
+\"[^\"]+\" { yylval->str = strdup(yytext); return T_QSTR; }
+= { return T_ASSIGN; }
 
-["]                    { BEGIN(DOUBLE_QUOTED); }
-<DOUBLE_QUOTED>[^"]    { }
-<DOUBLE_QUOTED>["]     { BEGIN(INITIAL); return WORD; }
-<DOUBLE_QUOTED><<EOF>> { return -1; }
 
-[a-zA-Z0-9_.-/]+       { return WORD; }
+\n { return T_EOL; }
 
-.                      { }
+. { }
 
 %%
 
-int read_input(char *buf, size_t max_size)
+static int read_input(char *buf, size_t max_size)
 {
 	char *line;
 	size_t line_size;
@@ -46,9 +45,8 @@ int read_input(char *buf, size_t max_size)
 	//getenv("HOME"); substr and replace with tilde 
 	//line = readline(cwd);
 	
-	line = readline("prikazovatko> ");
-	printf("[%s]\n", line);
-
+	line = readline("shl > ");
+	
 	if (strcmp(line, "quit") == 0 || strcmp(line, "exit") == 0) 
 		return YY_NULL; 
 
@@ -56,14 +54,19 @@ int read_input(char *buf, size_t max_size)
 	if (line[0] != '\0')
 		add_history(line);	
 
-	// append EOL
 	line_size = strlen(line);
-	line[line_size++] = '\n';
 
-	// pass line to parser
 	memcpy(buf, line, line_size);
 
+	// append EOL and terminating NULL byte
+	buf[line_size] = '\n';
+	buf[line_size + 1] = '\0';
+
 	free(line);
-	
+
 	return strlen(buf);
+}
+
+int yywrap() {
+	return 1;
 }
