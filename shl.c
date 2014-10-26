@@ -3,6 +3,11 @@
 #include <unistd.h>
 #include "shl.h"
 
+static int process_execute(Node *node);
+static int process_command(Node *node);
+static int process_pipe(Node *node);
+static int wait_for_child(pid_t);
+
 Node *node_create(char *command) {
 	Node *node = (Node *) malloc(sizeof(Node));
 	node->type = NODE_COMMAND;
@@ -11,15 +16,26 @@ Node *node_create(char *command) {
 	return node;
 }
 
-static int process_execute(Node *node);
-static int process_command(Node *node);
-static int process_pipe(Node *node);
-static int wait_for_child(pid_t);
-
 int node_execute(Node *node) {
 	int status = process_execute(node);
 	free(node);
 	return status;
+}
+
+Node *node_pipe(Node *left, Node *right) {
+	Node *most_right = left;
+	while (most_right->next != NULL)
+		most_right = most_right->next;
+	most_right->next = right;
+	return left;
+}
+
+Node *node_redirect_input(Node *node, char *input) {
+	return NULL;
+}
+
+Node *node_redirect_output(Node *node, char *output) {
+	return NULL;
 }
 
 static int process_execute(Node *node) {
@@ -67,20 +83,4 @@ static int wait_for_child(pid_t pid) {
 	}
 
 	return 1;
-}
-
-Node *node_pipe(Node *left, Node *right) {
-	Node *most_right = left;
-	while (most_right->next != NULL)
-		most_right = most_right->next;
-	most_right->next = right;
-	return left;
-}
-
-Node *node_redirect_input(Node *node, char *input) {
-	return NULL;
-}
-
-Node *node_redirect_output(Node *node, char *output) {
-	return NULL;
 }
