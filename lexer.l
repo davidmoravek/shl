@@ -39,7 +39,7 @@ static int read_input(char *buf, size_t max_size)
 	char prompt[1024 + 32];
 
 	getcwd(cwd, sizeof(cwd));
-	sprintf(prompt, "\x1b[31m%s\x1b[0m\nshl > ", cwd);
+	sprintf(prompt, "\x1b[31m%s\x1b[0m\nshl> ", cwd);
 
 	line = readline(prompt);
 

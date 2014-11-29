@@ -14,6 +14,7 @@ int yyerror(const char* s);
 	char *str;
 	Arg *arg;
 	Cmd *cmd;
+	Node *node;
 }
 
 %token <str> T_STR
@@ -34,8 +35,8 @@ int yyerror(const char* s);
 
 %type <arg> args
 %type <cmd> command
-%type <cmd> pipeline
-%type <cmd> list
+%type <node> pipeline
+%type <node> list
 
 %%
 
@@ -46,18 +47,19 @@ input
 
 line
 	: T_EOL
-	| list T_EOL                   { cmd_execute($1); }
+	| list T_EOL                   { node_execute($1); }
+	| list T_SEMI                  { node_execute($1); }
 	;
 
 list
 	: pipeline                     { $$ = $1; }
-	| list T_AND pipeline
-	| list T_OR pipeline
+	| list T_AND pipeline          { $$ = node_and($1, $3); }
+	| list T_OR pipeline           { $$ = node_or($1, $3); }
 	;
 
 pipeline
-	: command                      { $$ = $1; }
-	| pipeline T_PIPE command      { $$ = cmd_pipe($1, $3); }
+	: command                      { $$ = node_cmd($1); }
+	| pipeline T_PIPE command      { $$ = node_pipe($1, $3); }
 	;
 
 command

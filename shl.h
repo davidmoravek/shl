@@ -1,9 +1,9 @@
 typedef enum {
-	CHAIN_AND,
-	CHAIN_OR,
-	CHAIN_PIPE,
-	CHAIN_NONE
-} Chain;
+	NODE_AND,
+	NODE_OR,
+	NODE_PIPE,
+	NODE_CMD
+} NodeType;
 
 typedef struct arg_t {
 	char *name;
@@ -15,11 +15,25 @@ typedef struct command_t {
 	Arg *args;
 	char *in;
 	char *out;
-	Chain chain;
-	struct command_t *next;
 } Cmd;
 
+typedef struct node_t {
+	NodeType type;
+	union {
+		struct {
+			struct node_t *l;
+			struct node_t *r;
+		};
+		Cmd *cmd;
+	};
+} Node;
+
 Arg *arg_create(char *);
+
 Cmd *cmd_create(char *, Arg *);
-int cmd_execute(Cmd *);
-Cmd *cmd_pipe(Cmd *, Cmd*);
+
+Node *node_and(Node *, Node *);
+Node *node_cmd(Cmd *);
+int node_execute(Node *);
+Node *node_or(Node *, Node *);
+Node *node_pipe(Node *, Cmd *);
