@@ -16,22 +16,17 @@ static int read_input(char *buf, size_t max_size);
 
 %%
 
-\| { return T_PIPE; }
->> { return T_APPEND; }
-& { return T_BACKGROUND; }
-
-&& { return T_AND; }
-\|\| { return T_OR; }
-; { return T_SEMI; }
-
-[a-zA-Z0-9_.-/]+ { yylval->str = strdup(yytext); return T_STR; }
-\"[^\"]+\" { yylval->str = strdup(yytext); return T_QSTR; }
-= { return T_ASSIGN; }
-
-
-\n { return T_EOL; }
-
-. { }
+\|                 { return T_PIPE; }
+>>                 { return T_APPEND; }
+&                  { return T_BACKGROUND; }
+&&                 { return T_AND; }
+\|\|               { return T_OR; }
+;                  { return T_SEMI; }
+[a-zA-Z0-9_\.\-/]+ { yylval->str = strdup(yytext); return T_STR; }
+\"[^\"]+\"         { yylval->str = strdup(yytext); return T_QSTR; }
+=                  { return T_ASSIGN; }
+\n                 { return T_EOL; }
+.                  { }
 
 %%
 
@@ -39,7 +34,7 @@ static int read_input(char *buf, size_t max_size)
 {
 	char *line;
 	size_t line_size;
-	
+
 	char cwd[1024];
 	char prompt[1024 + 32];
 
@@ -47,13 +42,15 @@ static int read_input(char *buf, size_t max_size)
 	sprintf(prompt, "\x1b[31m%s\x1b[0m\nshl > ", cwd);
 
 	line = readline(prompt);
-	
-	if (strcmp(line, "quit") == 0 || strcmp(line, "exit") == 0) 
-		return YY_NULL; 
+
+	if (strcmp(line, "quit") == 0 || strcmp(line, "exit") == 0) {
+		return YY_NULL;
+	}
 
 	// filter out empty strings
-	if (line[0] != '\0')
-		add_history(line);	
+	if (line[0] != '\0') {
+		add_history(line);
+	}
 
 	line_size = strlen(line);
 

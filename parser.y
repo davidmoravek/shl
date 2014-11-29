@@ -11,8 +11,9 @@ int yyerror(const char* s);
 %pure-parser
 
 %union {
-  char *str;
-	Node *node;
+	char *str;
+	Arg *arg;
+	Cmd *cmd;
 }
 
 %token <str> T_STR
@@ -31,52 +32,44 @@ int yyerror(const char* s);
 %token T_ASSIGN
 %token T_EOL
 
-%type <str> command_name
-%type <node> command
-%type <node> pipeline 
-%type <node> list 
+%type <arg> args
+%type <cmd> command
+%type <cmd> pipeline
+%type <cmd> list
 
 %%
 
 input
 	:
-	| input line { }
+	| input line
 	;
 
 line
-	: T_EOL 
-	| list T_EOL { node_execute($1); }
+	: T_EOL
+	| list T_EOL                   { cmd_execute($1); }
 	;
 
 list
-	: pipeline { $$ = $1; }
+	: pipeline                     { $$ = $1; }
 	| list T_AND pipeline
 	| list T_OR pipeline
 	;
 
 pipeline
-	: command { $$ = $1; }
-	| pipeline T_PIPE command { $$ = node_pipe($1, $3); }
+	: command                      { $$ = $1; }
+	| pipeline T_PIPE command      { $$ = cmd_pipe($1, $3); }
 	;
 
 command
-	: command_name { $$ = node_create($1); }
-	| command_name args { $$ = node_create($1); } // @todo pass args
-	| command T_REDIRECT_IN T_STR { $$ = node_redirect_input($1, $3); }
-	| command T_REDIRECT_OUT T_STR { $$ = node_redirect_output($1, $3); }
-	;
-
-command_name
-	: T_STR
+	: T_STR                        { $$ = cmd_create($1, NULL); }
+	| T_STR args                   { $$ = cmd_create($1, $2); }
+	| command T_REDIRECT_IN T_STR  { $1->in = $3; $$ = $1; }
+	| command T_REDIRECT_OUT T_STR { $1->out = $3; $$ = $1; }
 	;
 
 args
-	: arg
-	| args arg
-	;
-
-arg
-	: T_STR
+	: T_STR                        { $$ = arg_create($1); }
+	| args T_STR                   { $$ = arg_create($2); $$->next = $1; }
 	;
 
 %%

@@ -3,63 +3,111 @@
 #include <unistd.h>
 #include "shl.h"
 
-static int process_execute(Node *node);
-static int process_command(Node *node);
-static int process_pipe(Node *node);
-static int wait_for_child(pid_t);
+/**
+ * ARGS
+ */
 
-Node *node_create(char *command) {
-	Node *node = (Node *) malloc(sizeof(Node));
-	node->type = NODE_COMMAND;
-	node->command = command;
-	node->next = NULL;
-	return node;
+Arg *arg_create(char *name) {
+	Arg *arg = (Arg *) malloc(sizeof(Arg));
+	arg->name = name;
+	arg->next = NULL;
+	return arg;
 }
 
-int node_execute(Node *node) {
-	int status = process_execute(node);
-	free(node);
+static int arg_count(Arg *arg) {
+	Arg *temp = arg;
+	int cnt = 0;
+	while (temp) {
+		cnt++;
+		temp = temp->next;
+	}
+	return cnt;
+}
+
+static Arg *arg_reverse(Arg *head) {
+	Arg *prev = NULL;
+	while (head) {
+		Arg *temp = head;
+		head = head->next;
+		temp->next = prev;
+		prev = temp;
+	}
+	return prev;
+}
+
+/**
+ * CMDS
+ */
+
+static int do_execute(Cmd *);
+
+Cmd *cmd_create(char *name, Arg * args) {
+	if (args != NULL) {
+		args = arg_reverse(args);
+	}
+	Cmd *cmd = (Cmd *) malloc(sizeof(Cmd));
+	cmd->name = name;
+	cmd->args = args;
+	cmd->in = NULL;
+	cmd->out = NULL;
+	cmd->chain = CHAIN_NONE;
+	cmd->next = NULL;
+	return cmd;
+}
+
+int cmd_execute(Cmd *cmd) {
+	int status = do_execute(cmd);
+	free(cmd); // @todo recursive
 	return status;
 }
 
-Node *node_pipe(Node *left, Node *right) {
-	Node *most_right = left;
-	while (most_right->next != NULL)
-		most_right = most_right->next;
-	most_right->next = right;
-	return left;
+Cmd *cmd_pipe(Cmd *l, Cmd *r) {
+	Cmd *last = l;
+	for (; last->next != NULL; last = last->next)
+		;
+	last->chain = CHAIN_PIPE;
+	last->next = r;
+	return l;
 }
 
-Node *node_redirect_input(Node *node, char *input) {
-	return NULL;
-}
+/**
+ * EVAL
+ */
 
-Node *node_redirect_output(Node *node, char *output) {
-	return NULL;
-}
+static int do_command(Cmd *);
+static int do_pipe(Cmd *);
+static int wait_for_child(pid_t);
 
-static int process_execute(Node *node) {
-	if (node == NULL)
+static int do_execute(Cmd *cmd) {
+	if (cmd == NULL) {
 		return 0;
+	}
 
-	switch (node->type) {
-		case NODE_COMMAND:
-			return process_command(node);
-		case NODE_PIPE:
-			return process_pipe(node);
+	switch (cmd->chain) {
+		case CHAIN_NONE:
+			return do_command(cmd);
+		case CHAIN_PIPE:
+			return do_pipe(cmd);
 		default:
 			return 1;
 	}
 }
 
-static int process_command(Node *node) {
+static int do_command(Cmd *cmd) {
 	pid_t child;
 	if ((child = fork()) == 0) {
-		char **argv = (char **) malloc(2 * sizeof(char *));
-		argv[0] = node->command;
-		argv[1] = NULL;
-		execvp(node->command, argv);
-		perror(node->command);
+		int argc = 2 + arg_count(cmd->args);
+		char **argv = (char **) malloc(argc * sizeof(char *));
+		argv[0] = cmd->name;
+		argv[argc - 1] = NULL;
+		if (argc > 2) {
+			int i = 1;
+			Arg *temp = cmd->args;
+			for (; temp != NULL; temp = temp->next)
+				argv[i++] = temp ->name;
+		}
+		execvp(cmd->name, argv);
+		perror(cmd->name);
 		free(argv);
 		exit(1);
 	} else {
@@ -68,7 +116,7 @@ static int process_command(Node *node) {
 	return 1;
 }
 
-static int process_pipe(Node *node) {
+static int do_pipe(Cmd *cmd) {
 	return 1;
 }
 
