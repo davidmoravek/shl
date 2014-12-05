@@ -35,12 +35,6 @@ typedef struct node_t {
 	};
 } Node;
 
-typedef struct job_t {
-	pid_t pid;
-	int jid;
-	int state;
-} Job;
-
 Arg *arg_create(char *);
 
 Cmd *cmd_create(char *, Arg *);

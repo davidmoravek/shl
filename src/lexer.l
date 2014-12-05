@@ -22,7 +22,7 @@
 ;                  { return T_SEMI; }
 \>                 { return T_REDIRECT_OUT; }
 \<                 { return T_REDIRECT_IN; }
-[a-zA-Z0-9_\.\-/]+ { yylval->str = strdup(yytext); return T_STR; }
+[a-zA-Z0-9_\.\-/*]+ { yylval->str = strdup(yytext); return T_STR; }
 
 \"                 { is_multiline = 1; BEGIN QUOTED; }
 

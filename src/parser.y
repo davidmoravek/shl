@@ -61,8 +61,8 @@ command
 	;
 
 args
-	: arg_name { $$ = arg_create($1); }
-	| args arg_name{ $$ = arg_create($2); $$->next = $1; }
+	: arg_name                     { $$ = arg_create($1); }
+	| args arg_name                { $$ = arg_create($2); $$->next = $1; }
 	;
 
 arg_name

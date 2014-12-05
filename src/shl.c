@@ -1,10 +1,13 @@
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "shl.h"
+
+#define MAX_JOBS 32
 
 int is_multiline = 0;
 
@@ -250,6 +253,12 @@ static int do_cmd(Cmd *cmd) {
 	}
 
 	if ((child = fork()) == 0) {
+      signal (SIGINT, SIG_DFL);
+      signal (SIGQUIT, SIG_DFL);
+      signal (SIGTSTP, SIG_DFL);
+      signal (SIGTTIN, SIG_DFL);
+      signal (SIGTTOU, SIG_DFL);
+      signal (SIGCHLD, SIG_DFL);
 		char **argv = arg_vector(cmd);
 		if (cmd->in != NULL) {
 			int fd = open(cmd->in, O_RDONLY);
@@ -328,6 +337,5 @@ static int wait_for_child(pid_t pid) {
 	if (WIFEXITED(status)) {
 		return WEXITSTATUS(status);
 	}
-
 	return 1;
 }
