@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "shl.h"
@@ -91,7 +92,8 @@ static char **arg_vector(Cmd *cmd) {
 	argv[argc - 1] = NULL;
 	if (argc > 2) {
 		Arg *temp = cmd->args;
-		for (int i = 1; temp != NULL; i++, temp = temp->next)
+		int i;
+		for (i = 1; temp != NULL; i++, temp = temp->next)
 			argv[i] = temp->name;
 	}
 	return argv;
