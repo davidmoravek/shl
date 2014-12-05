@@ -17,26 +17,14 @@ int yyerror(const char* s);
 	Node *node;
 }
 
-%token <str> T_STR
-%token <str> T_QSTR
+%token <str> T_STR T_QSTR
 
-%token T_PIPE
-%token T_APPEND
-%token T_REDIRECT_IN
-%token T_REDIRECT_OUT
-%token T_BACKGROUND
-
-%token T_AND
-%token T_OR
-%token T_SEMI
-
-%token T_ASSIGN
-%token T_EOL
+%token T_PIPE T_APPEND T_REDIRECT_IN T_REDIRECT_OUT T_BG T_AND T_OR T_SEMI T_ASSIGN T_EOL
 
 %type <arg> args
+%type <str> arg_name
 %type <cmd> command
-%type <node> pipeline
-%type <node> list
+%type <node> pipeline list
 
 %%
 
@@ -55,6 +43,8 @@ list
 	: pipeline                     { $$ = $1; }
 	| list T_AND pipeline          { $$ = node_and($1, $3); }
 	| list T_OR pipeline           { $$ = node_or($1, $3); }
+	| list T_BG                    { $$ = node_bg($1, NULL) }
+	| list T_BG pipeline           { $$ = node_bg($1, $3); }
 	;
 
 pipeline
@@ -67,11 +57,17 @@ command
 	| T_STR args                   { $$ = cmd_create($1, $2); }
 	| command T_REDIRECT_IN T_STR  { $1->in = $3; $$ = $1; }
 	| command T_REDIRECT_OUT T_STR { $1->out = $3; $$ = $1; }
+	| command T_APPEND T_STR       { $1->out = $3; $1->out_append = 1; $$ = $1; }
 	;
 
 args
-	: T_STR                        { $$ = arg_create($1); }
-	| args T_STR                   { $$ = arg_create($2); $$->next = $1; }
+	: arg_name { $$ = arg_create($1); }
+	| args arg_name{ $$ = arg_create($2); $$->next = $1; }
+	;
+
+arg_name
+	: T_STR
+	| T_QSTR
 	;
 
 %%

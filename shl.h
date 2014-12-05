@@ -1,5 +1,11 @@
+#ifndef SHL_H
+#define SHL_H
+
+#include <unistd.h>
+
 typedef enum {
 	NODE_AND,
+	NODE_BG,
 	NODE_OR,
 	NODE_PIPE,
 	NODE_CMD
@@ -15,6 +21,7 @@ typedef struct command_t {
 	Arg *args;
 	char *in;
 	char *out;
+	int out_append;
 } Cmd;
 
 typedef struct node_t {
@@ -28,12 +35,25 @@ typedef struct node_t {
 	};
 } Node;
 
+typedef struct job_t {
+	pid_t pid;
+	int jid;
+	int state;
+} Job;
+
 Arg *arg_create(char *);
 
 Cmd *cmd_create(char *, Arg *);
 
 Node *node_and(Node *, Node *);
+Node *node_bg(Node *, Node *);
 Node *node_cmd(Cmd *);
 int node_execute(Node *);
 Node *node_or(Node *, Node *);
 Node *node_pipe(Node *, Cmd *);
+
+int read_input(char *buf, size_t max_size);
+
+extern int is_multiline;
+
+#endif
